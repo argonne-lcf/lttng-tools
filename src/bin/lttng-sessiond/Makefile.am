@@ -65,7 +65,8 @@ liblttng_sessiond_common_la_SOURCES = utils.cpp utils.hpp \
                        trace-class.hpp trace-class.cpp \
                        consumer-destination-type.hpp \
                        consumer-output.hpp \
-                       snapshot-output.hpp
+                       snapshot-output.hpp \
+                       pause.cpp pause.hpp
 
 if HAVE_LIBLTTNG_UST_CTL
 liblttng_sessiond_common_la_SOURCES += trace-ust.cpp ust-registry.cpp ust-app.cpp \
