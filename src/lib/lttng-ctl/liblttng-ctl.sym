@@ -438,6 +438,7 @@ lttng_register_consumer
 lttng_register_trigger
 lttng_register_trigger_with_automatic_name
 lttng_register_trigger_with_name
+lttng_resume_session
 lttng_rotate_session
 lttng_rotation_handle_destroy
 lttng_rotation_handle_get_archive_location
