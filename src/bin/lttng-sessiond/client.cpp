@@ -15,6 +15,7 @@
 #include "kernel.hpp"
 #include "lttng-sessiond.hpp"
 #include "manage-consumer.hpp"
+#include "pause.hpp"
 #include "save.hpp"
 #include "testpoint.hpp"
 #include "utils.hpp"

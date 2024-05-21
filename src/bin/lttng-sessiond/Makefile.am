@@ -68,7 +68,8 @@ liblttng_sessiond_common_la_SOURCES = utils.cpp utils.hpp \
                        snapshot-output.hpp \
                        recording-channel-configuration.hpp recording-channel-configuration.cpp \
                        event-rule-configuration.hpp event-rule-configuration.cpp \
-                       domain.hpp domain.cpp
+                       domain.hpp domain.cpp \
+                       pause.cpp pause.hpp
 
 if HAVE_LIBLTTNG_UST_CTL
 liblttng_sessiond_common_la_SOURCES += trace-ust.cpp ust-registry.cpp ust-app.cpp \
