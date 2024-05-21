@@ -12,6 +12,7 @@ liblttng_ctl_la_SOURCES = \
 		lttng-ctl.cpp \
 		lttng-ctl-health.cpp \
 		lttng-ctl-helper.hpp \
+		pause.cpp \
 		rotate.cpp \
 		save.cpp \
 		snapshot.cpp \

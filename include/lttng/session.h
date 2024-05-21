@@ -506,6 +506,30 @@ utility.
 */
 LTTNG_EXPORT extern int lttng_set_session_shm_path(const char *session_name, const char *shm_dir);
 
+/*!
+@brief
+    Pauses the recording session named \lt_p{session_name}.
+
+Pausing a recording session stops the consumption of tracing data to the
+disk or network.
+
+@param[in] session_name
+    Name of the recording session to pause.
+
+@returns
+    #LTTNG_OK on success, or a \em negative #lttng_error_code enumerator otherwise.
+
+@lt_pre_conn
+@lt_pre_not_null{session_name}
+@lt_pre_sess_exists{session_name}
+@pre
+    The recording session named \lt_p{session_name} has an output (i.e., not a snapshot session).
+
+@sa lttng_resume_session() --
+    Resumes a paused recording session.
+*/
+LTTNG_EXPORT extern enum lttng_error_code lttng_pause_session(const char *session_name);
+
 /// @}
 
 #ifdef __cplusplus
