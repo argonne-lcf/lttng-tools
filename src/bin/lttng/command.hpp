@@ -74,6 +74,7 @@ DECL_COMMAND(untrack);
 DECL_COMMAND(metadata);
 DECL_COMMAND(regenerate);
 DECL_COMMAND(pause);
+DECL_COMMAND(resume);
 DECL_COMMAND(rotate);
 DECL_COMMAND(enable_rotation);
 DECL_COMMAND(disable_rotation);
