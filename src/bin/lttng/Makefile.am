@@ -29,6 +29,7 @@ lttng_SOURCES = command.hpp conf.cpp conf.hpp commands/start.cpp \
 				commands/enable_rotation.cpp \
 				commands/disable_rotation.cpp \
 				commands/pause.cpp \
+				commands/resume.cpp \
 				commands/clear.cpp \
 				loglevel.cpp loglevel.hpp \
 				commands/add_trigger.cpp \

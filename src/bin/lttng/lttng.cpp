@@ -80,6 +80,7 @@ static struct cmd_struct commands[] = {
 	{ "pause", cmd_pause },
 	{ "regenerate", cmd_regenerate },
 	{ "remove-trigger", cmd_remove_trigger },
+	{ "resume", cmd_resume },
 	{ "rotate", cmd_rotate },
 	{ "enable-rotation", cmd_enable_rotation },
 	{ "disable-rotation", cmd_disable_rotation },
