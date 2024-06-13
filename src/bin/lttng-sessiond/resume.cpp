@@ -8,7 +8,7 @@
 #define _LGPL_SOURCE
 #include "resume.hpp"
 
-lttng_error_code cmd_resume_session(const ltt_session::locked_ref &session)
+lttng_error_code cmd_resume_session(const ltt_session::locked_ref& session)
 {
 	return LTTNG_ERR_NOT_SUPPORTED;
 }
