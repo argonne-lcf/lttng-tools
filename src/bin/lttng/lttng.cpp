@@ -77,6 +77,7 @@ static struct cmd_struct commands[] = {
 	{ "list-triggers", cmd_list_triggers },
 	{ "load", cmd_load },
 	{ "metadata", cmd_metadata },
+	{ "pause", cmd_pause },
 	{ "regenerate", cmd_regenerate },
 	{ "remove-trigger", cmd_remove_trigger },
 	{ "rotate", cmd_rotate },
