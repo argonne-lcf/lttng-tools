@@ -412,6 +412,8 @@ static const char *lttng_error_code_str(lttng_error_code code)
 		return "Invalid error query target.";
 	case LTTNG_ERR_BUFFER_FLUSH_FAILED:
 		return "Failed to flush stream buffer";
+	case LTTNG_ERR_SESSION_DATA_CONSUMPTION_ALREADY_PAUSED:
+		return "Session data consumption is already paused";
 	case LTTNG_ERR_NR:
 		abort();
 	}

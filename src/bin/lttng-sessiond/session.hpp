@@ -64,6 +64,9 @@ int session_trylock_list() noexcept;
 								   LTTNG_SOURCE_LOCATION())
 #define LTTNG_THROW_SESSION_NOT_FOUND_BY_ID_ERROR(id) \
 	throw lttng::sessiond::exceptions::session_not_found_error(id, LTTNG_SOURCE_LOCATION())
+#define LTTNG_THROW_SESSION_DATA_CONSUMPTION_ALREADY_PAUSED()                       \
+	throw lttng::sessiond::exceptions::session_data_consumption_already_paused( \
+		LTTNG_SOURCE_LOCATION())
 
 /*
  * Tracing session list
@@ -307,6 +310,8 @@ public:
 	void lock() const noexcept;
 	void unlock() const noexcept;
 
+	void pause();
+
 	lttng::sessiond::user_space_consumer_channel_keys user_space_consumer_channel_keys() const;
 
 	/*
@@ -455,6 +460,10 @@ public:
 	struct lttng_dynamic_array clear_notifiers;
 	/* Session base path override. Set non-null. */
 	char *base_path;
+
+private:
+	/* True if the session is currently paused. */
+	bool _paused;
 };
 
 /*
@@ -567,7 +576,15 @@ public:
 
 	query_parameter query_parameter;
 };
-} // namespace exceptions
+
+class session_data_consumption_already_paused : public lttng::runtime_error {
+public:
+	explicit session_data_consumption_already_paused(const lttng::source_location& source_location_) :
+		lttng::runtime_error("Session already paused", source_location_)
+	{
+	}
+};
+} /* namespace exceptions */
 } /* namespace sessiond */
 } /* namespace lttng */
 
@@ -666,6 +683,11 @@ static inline enum lttng_error_code ust_app_clear_session(const ltt_session::loc
 
 static inline enum lttng_error_code ust_app_open_packets(const ltt_session::locked_ref& session
 							 __attribute__((unused)))
+{
+	return LTTNG_ERR_UNK;
+}
+
+static inline enum lttng_error_code ust_app_pause_session(const ltt_session::locked_ref&)
 {
 	return LTTNG_ERR_UNK;
 }

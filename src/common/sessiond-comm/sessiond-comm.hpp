@@ -841,6 +841,9 @@ struct lttcomm_consumer_msg {
 		struct {
 			uint64_t key;
 		} LTTNG_PACKED open_channel_packets;
+		struct {
+			uint64_t key;
+		} LTTNG_PACKED pause_channel;
 	} u;
 } LTTNG_PACKED;
 
