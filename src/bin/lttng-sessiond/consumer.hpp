@@ -12,6 +12,7 @@
 #include "snapshot.hpp"
 
 #include <common/consumer/consumer.hpp>
+#include <common/exception.hpp>
 #include <common/hashtable/hashtable.hpp>
 
 #include <lttng/lttng.h>
@@ -21,6 +22,89 @@
 
 struct snapshot;
 struct snapshot_output;
+
+#define LTTNG_THROW_CONSUMER_ERROR(msg, consumer_type, error_code) \
+	throw lttng::sessiond::consumerd::exceptions::error(       \
+		msg, consumer_type, error_code, LTTNG_SOURCE_LOCATION())
+
+namespace lttng {
+namespace sessiond {
+namespace consumerd {
+enum class type : std::uint8_t {
+	USER_SPACE_32_BIT,
+	USER_SPACE_64_BIT,
+	KERNEL,
+};
+
+static inline type type_from(lttng_consumer_type consumer_type)
+{
+	switch (consumer_type) {
+	case LTTNG_CONSUMER32_UST:
+		return type::USER_SPACE_32_BIT;
+	case LTTNG_CONSUMER64_UST:
+		return type::USER_SPACE_64_BIT;
+	case LTTNG_CONSUMER_KERNEL:
+		return type::KERNEL;
+	default:
+		std::abort();
+	}
+}
+
+namespace exceptions {
+/**
+ * @class error
+ * @brief Wraps lttcomm_return_code returned by the consumer daemons in response to sessiond
+ * commands.
+ *
+ * Represents a generic error returned by a consumer daemon instance in response to a command.
+ */
+class error : public runtime_error {
+public:
+	explicit error(const std::string& msg,
+		       type consumerd_type,
+		       lttcomm_return_code error_code,
+		       const lttng::source_location& source_location);
+
+	const lttcomm_return_code code;
+	const type consumerd_type;
+};
+} /* namespace exceptions */
+} /* namespace consumerd */
+} /* namespace sessiond */
+} /* namespace lttng */
+
+/*
+ * Due to a bug in g++ < 7.1, this specialization must be enclosed in the fmt namespace,
+ * see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56480.
+ */
+namespace fmt {
+template <>
+struct formatter<lttng::sessiond::consumerd::type> : formatter<std::string> {
+	template <typename FormatContextType>
+	typename FormatContextType::iterator
+	format(const lttng::sessiond::consumerd::type consumerd_type,
+	       FormatContextType& ctx) const
+	{
+		const char *name;
+
+		switch (consumerd_type) {
+		case lttng::sessiond::consumerd::type::USER_SPACE_32_BIT:
+			name = "USER_SPACE_32_BIT";
+			break;
+		case lttng::sessiond::consumerd::type::USER_SPACE_64_BIT:
+			name = "USER_SPACE_64_BIT";
+			break;
+		case lttng::sessiond::consumerd::type::KERNEL:
+			name = "KERNEL";
+			break;
+		default:
+			std::abort();
+		}
+
+		return format_to(ctx.out(), name);
+	}
+};
+} /* namespace fmt */
 
 /*
  * Needed until we use C++14, where std::max is constexpr.
@@ -345,5 +429,7 @@ char *setup_channel_trace_path(struct consumer_output *consumer,
 
 /* Clear command */
 int consumer_clear_channel(struct consumer_socket *socket, uint64_t key);
+
+void consumer_pause_channel(consumer_socket *socket, uint64_t key);
 
 #endif /* _CONSUMER_H */

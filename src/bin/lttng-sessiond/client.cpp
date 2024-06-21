@@ -2257,6 +2257,9 @@ skip_domain:
 		ret = cmd_clear_session(*target_session, sock);
 		break;
 	}
+	case LTTCOMM_SESSIOND_COMMAND_PAUSE_SESSION:
+		cmd_pause_session(*target_session);
+		break;
 	case LTTCOMM_SESSIOND_COMMAND_LIST_TRIGGERS:
 	{
 		struct lttng_triggers *return_triggers = nullptr;

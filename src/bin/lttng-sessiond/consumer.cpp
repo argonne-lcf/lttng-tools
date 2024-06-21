@@ -16,7 +16,9 @@
 
 #include <common/common.hpp>
 #include <common/defaults.hpp>
+#include <common/pthread-lock.hpp>
 #include <common/relayd/relayd.hpp>
+#include <common/scope-exit.hpp>
 #include <common/string-utils/format.hpp>
 #include <common/urcu.hpp>
 #include <common/uri.hpp>
@@ -28,6 +30,137 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+namespace lsc = lttng::sessiond::consumerd;
+
+/*
+ * Due to a bug in g++ < 7.1, this specialization must be enclosed in the fmt namespace,
+ * see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56480.
+ */
+namespace fmt {
+template <>
+struct formatter<lttcomm_return_code> : formatter<std::string> {
+	template <typename FormatContextType>
+	typename FormatContextType::iterator format(const lttcomm_return_code return_code,
+						    FormatContextType& ctx) const
+	{
+		const char *description;
+
+		switch (return_code) {
+		case LTTCOMM_CONSUMERD_SUCCESS:
+			description = "Everything went fine";
+			break;
+		case LTTCOMM_CONSUMERD_COMMAND_SOCK_READY:
+			description = "Command socket ready";
+			break;
+		case LTTCOMM_CONSUMERD_SUCCESS_RECV_FD:
+			description = "Success on receiving fds";
+			break;
+		case LTTCOMM_CONSUMERD_ERROR_RECV_FD:
+			description = "Error on receiving fds";
+			break;
+		case LTTCOMM_CONSUMERD_ERROR_RECV_CMD:
+			description = "Error on receiving command";
+			break;
+		case LTTCOMM_CONSUMERD_POLL_ERROR:
+			description = "Error in polling thread";
+			break;
+		case LTTCOMM_CONSUMERD_POLL_NVAL:
+			description = "Poll on closed fd";
+			break;
+		case LTTCOMM_CONSUMERD_POLL_HUP:
+			description = "All fds have hungup";
+			break;
+		case LTTCOMM_CONSUMERD_EXIT_SUCCESS:
+			description = "Consumerd exiting normally";
+			break;
+		case LTTCOMM_CONSUMERD_EXIT_FAILURE:
+			description = "Consumerd exiting on error";
+			break;
+		case LTTCOMM_CONSUMERD_OUTFD_ERROR:
+			description = "Error opening the tracefile";
+			break;
+		case LTTCOMM_CONSUMERD_SPLICE_EBADF:
+			description = "EBADF from splice(2)";
+			break;
+		case LTTCOMM_CONSUMERD_SPLICE_EINVAL:
+			description = "EINVAL from splice(2)";
+			break;
+		case LTTCOMM_CONSUMERD_SPLICE_ENOMEM:
+			description = "ENOMEM from splice(2)";
+			break;
+		case LTTCOMM_CONSUMERD_SPLICE_ESPIPE:
+			description = "ESPIPE from splice(2)";
+			break;
+		case LTTCOMM_CONSUMERD_ENOMEM:
+			description = "Consumer is out of memory";
+			break;
+		case LTTCOMM_CONSUMERD_ERROR_METADATA:
+			description = "Error with metadata.";
+			break;
+		case LTTCOMM_CONSUMERD_FATAL:
+			description = "Fatal error.";
+			break;
+		case LTTCOMM_CONSUMERD_RELAYD_FAIL:
+			description = "Error on remote relayd";
+			break;
+		case LTTCOMM_CONSUMERD_CHANNEL_FAIL:
+			description = "Channel creation failed.";
+			break;
+		case LTTCOMM_CONSUMERD_CHAN_NOT_FOUND:
+			description = "Channel not found.";
+			break;
+		case LTTCOMM_CONSUMERD_ALREADY_SET:
+			description = "Resource already set";
+			break;
+		case LTTCOMM_CONSUMERD_ROTATION_FAIL:
+			description = "Rotation has failed";
+			break;
+		case LTTCOMM_CONSUMERD_SNAPSHOT_FAILED:
+			description = "Snapshot has failed";
+			break;
+		case LTTCOMM_CONSUMERD_CREATE_TRACE_CHUNK_FAILED:
+			description = "Trace chunk creation failed";
+			break;
+		case LTTCOMM_CONSUMERD_CLOSE_TRACE_CHUNK_FAILED:
+			description = "Trace chunk close failed";
+			break;
+		case LTTCOMM_CONSUMERD_INVALID_PARAMETERS:
+			description = "Invalid parameters";
+			break;
+		case LTTCOMM_CONSUMERD_TRACE_CHUNK_EXISTS_LOCAL:
+			description = "Trace chunk exists on consumer daemon";
+			break;
+		case LTTCOMM_CONSUMERD_TRACE_CHUNK_EXISTS_REMOTE:
+			description = "Trace chunk exists on relay daemon";
+			break;
+		case LTTCOMM_CONSUMERD_UNKNOWN_TRACE_CHUNK:
+			description = "Unknown trace chunk";
+			break;
+		case LTTCOMM_CONSUMERD_RELAYD_CLEAR_DISALLOWED:
+			description = "Relayd does not accept clear command";
+			break;
+		case LTTCOMM_CONSUMERD_UNKNOWN_ERROR:
+			description = "Unknown error";
+			break;
+		default:
+			std::abort();
+		}
+
+		return format_to(ctx.out(), description);
+	}
+};
+} /* namespace fmt */
+
+lsc::exceptions::error::error(const std::string& msg,
+			      lsc::type consumerd_type_,
+			      lttcomm_return_code error_code,
+			      const lttng::source_location& location) :
+	runtime_error(fmt::format("{}: {}", msg, error_code), location),
+	code{ error_code },
+	consumerd_type{ consumerd_type_ }
+{
+}
 
 /*
  * Return allocated full pathname of the session using the consumer trace path
@@ -1765,6 +1898,39 @@ error_socket:
 
 	health_code_update();
 	return ret;
+}
+
+void consumer_pause_channel(consumer_socket *socket, uint64_t key)
+{
+	LTTNG_ASSERT(socket);
+
+	DBG_FMT("Sending consumer pause channel command: key={}, consumerd_type={}",
+		key,
+		lsc::type_from(socket->type));
+
+	lttcomm_consumer_msg msg = {};
+	msg.cmd_type = LTTNG_CONSUMER_PAUSE_CHANNEL;
+	msg.u.pause_channel.key = key;
+
+	health_code_update();
+
+	const auto update_health_code_at_exit =
+		lttng::make_scope_exit([]() noexcept { health_code_update(); });
+
+	const lttng::pthread::lock_guard socket_lock(*socket->lock);
+	const auto consumerd_ret = consumer_send_msg(socket, &msg);
+	if (consumerd_ret == LTTCOMM_CONSUMERD_SUCCESS) {
+		return;
+	} else if (consumerd_ret == -1) {
+		LTTNG_THROW_COMMUNICATION_ERROR(fmt::format(
+			"Failed to send pause channel command to consumer daemon: consumerd_type={}, socket_fd={}",
+			lsc::type_from(socket->type),
+			socket->fd_ptr ? *socket->fd_ptr : -1));
+	} else {
+		LTTNG_THROW_CONSUMER_ERROR("Failed to run pause channel on consumer",
+					   lsc::type_from(socket->type),
+					   static_cast<lttcomm_return_code>(-consumerd_ret));
+	}
 }
 
 int consumer_init(struct consumer_socket *socket, const lttng_uuid& sessiond_uuid)
