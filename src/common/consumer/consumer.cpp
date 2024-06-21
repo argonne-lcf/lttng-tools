@@ -5221,14 +5221,17 @@ enum lttcomm_return_code _set_channel_pause_status(lttng_consumer_channel& chann
 	const lttng::pthread::lock_guard global_lock(the_consumer_data.lock);
 	const lttng::pthread::lock_guard channel_lock(channel.lock);
 
+	DBG_FMT("{}: channel_key={}, session_id={}", command_name.data(), channel.key, channel.session_id);
+
 	if (channel.metadata_stream) {
 		ERR_FMT("{} command attempted on a metadata channel", command_name.data());
 		return LTTCOMM_CONSUMERD_INVALID_PARAMETERS;
 	}
 
-	if (channel.paused) {
-		ERR_FMT("{} command attempted on channel that is already paused",
-			command_name.data());
+	if (channel.paused == new_paused_status) {
+		ERR_FMT("{} command attempted on channel that is already {}",
+			command_name.data(),
+			new_paused_status ? "paused" : "resumed");
 		return LTTCOMM_CONSUMERD_INVALID_PARAMETERS;
 	}
 
@@ -5244,6 +5247,11 @@ enum lttcomm_return_code _set_channel_pause_status(lttng_consumer_channel& chann
 enum lttcomm_return_code lttng_consumer_pause_channel(lttng_consumer_channel& channel)
 {
 	return _set_channel_pause_status(channel, "Pause channel", true);
+}
+
+enum lttcomm_return_code lttng_consumer_resume_channel(lttng_consumer_channel& channel)
+{
+	return _set_channel_pause_status(channel, "Resume channel", false);
 }
 
 void lttng_consumer_sigbus_handle(void *addr)
