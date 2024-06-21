@@ -414,6 +414,8 @@ static const char *lttng_error_code_str(lttng_error_code code)
 		return "Failed to flush stream buffer";
 	case LTTNG_ERR_SESSION_DATA_CONSUMPTION_ALREADY_PAUSED:
 		return "Session data consumption is already paused";
+	case LTTNG_ERR_SESSION_DATA_CONSUMPTION_ALREADY_ONGOING:
+		return "Session data consumption is already ongoing";
 	case LTTNG_ERR_NR:
 		abort();
 	}

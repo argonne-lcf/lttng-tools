@@ -1944,3 +1944,32 @@ void ltt_session::pause()
 		consumer_pause_channel(socket, key.key_value);
 	}
 }
+
+void ltt_session::resume()
+{
+	if (!_paused) {
+		LTTNG_THROW_SESSION_DATA_CONSUMPTION_ALREADY_ONGOING();
+	}
+
+	_paused = false;
+	if (!ust_session) {
+		return;
+	}
+
+	for (const auto key : user_space_consumer_channel_keys()) {
+		if (key.type !=
+		    lttng::sessiond::user_space_consumer_channel_keys::channel_type::DATA) {
+			continue;
+		}
+
+		const auto socket = consumer_find_socket_by_bitness(
+			key.bitness ==
+					lttng::sessiond::user_space_consumer_channel_keys::
+						consumer_bitness::ABI_32 ?
+				32 :
+				64,
+			ust_session->consumer);
+
+		consumer_resume_channel(socket, key.key_value);
+	}
+}

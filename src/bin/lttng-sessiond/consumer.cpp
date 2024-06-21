@@ -1935,6 +1935,39 @@ void consumer_pause_channel(consumer_socket *socket, uint64_t key)
 	}
 }
 
+void consumer_resume_channel(consumer_socket *socket, uint64_t key)
+{
+	LTTNG_ASSERT(socket);
+
+	DBG_FMT("Sending consumer resume channel command: key={}, consumerd_type={}",
+		key,
+		lsc::type_from(socket->type));
+
+	lttcomm_consumer_msg msg = {};
+	msg.cmd_type = LTTNG_CONSUMER_RESUME_CHANNEL;
+	msg.u.resume_channel.key = key;
+
+	health_code_update();
+
+	const auto update_health_code_at_exit =
+		lttng::make_scope_exit([]() noexcept { health_code_update(); });
+
+	const lttng::pthread::lock_guard socket_lock(*socket->lock);
+	const auto consumerd_ret = consumer_send_msg(socket, &msg);
+	if (consumerd_ret == LTTCOMM_CONSUMERD_SUCCESS) {
+		return;
+	} else if (consumerd_ret == -1) {
+		LTTNG_THROW_COMMUNICATION_ERROR(fmt::format(
+			"Failed to send resume channel command to consumer daemon: consumerd_type={}, socket_fd={}",
+			lsc::type_from(socket->type),
+			socket->fd_ptr ? *socket->fd_ptr : -1));
+	} else {
+		LTTNG_THROW_CONSUMER_ERROR("Failed to run resume channel on consumer",
+					   lsc::type_from(socket->type),
+					   static_cast<lttcomm_return_code>(-consumerd_ret));
+	}
+}
+
 int consumer_init(struct consumer_socket *socket, const lttng_uuid& sessiond_uuid)
 {
 	int ret;
