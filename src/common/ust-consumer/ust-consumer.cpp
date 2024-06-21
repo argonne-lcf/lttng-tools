@@ -2290,6 +2290,28 @@ int lttng_ustconsumer_recv_cmd(struct lttng_consumer_local_data *ctx,
 		health_code_update();
 		goto end_msg_sessiond;
 	}
+	case LTTNG_CONSUMER_PAUSE_CHANNEL:
+	{
+		const auto channel_key = msg.u.pause_channel.key;
+		auto *found_channel = consumer_find_channel(channel_key);
+
+		if (found_channel) {
+			ret_code = lttng_consumer_pause_channel(*found_channel);
+			/* Wake-up consumption thread to update its poll set. */
+			const lttng_consumer_stream* dummy_stream = nullptr;
+			(void) lttng_pipe_write(ctx->consumer_data_pipe, &dummy_stream, sizeof(dummy_stream));
+		} else {
+			/*
+			 * The channel could have disappeared in per-pid
+			 * buffering mode.
+			 */
+			DBG_FMT("Failed to target channel of pause channel command: channel_key={}", channel_key);
+			ret_code = LTTCOMM_CONSUMERD_CHAN_NOT_FOUND;
+		}
+
+		health_code_update();
+		goto end_msg_sessiond;
+	}
 	default:
 		break;
 	}

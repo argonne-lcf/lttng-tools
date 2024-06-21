@@ -1183,7 +1183,8 @@ static int update_poll_array(struct lttng_consumer_local_data *ctx,
 		 * closed by the polling thread after a wakeup on the data_pipe or
 		 * metadata_pipe.
 		 */
-		if (stream->endpoint_status == CONSUMER_ENDPOINT_INACTIVE) {
+		if (stream->endpoint_status == CONSUMER_ENDPOINT_INACTIVE ||
+		    stream->chan->paused) {
 			(*nb_inactive_fd)++;
 			continue;
 		}
@@ -5105,6 +5106,39 @@ enum lttcomm_return_code lttng_consumer_open_channel_packets(struct lttng_consum
 	}
 
 	return ret;
+}
+
+namespace {
+enum lttcomm_return_code _set_channel_pause_status(lttng_consumer_channel& channel,
+						   lttng::c_string_view command_name,
+						   bool new_paused_status)
+{
+	const lttng::pthread::lock_guard global_lock(the_consumer_data.lock);
+	const lttng::pthread::lock_guard channel_lock(channel.lock);
+
+	if (channel.metadata_stream) {
+		ERR_FMT("{} command attempted on a metadata channel", command_name.data());
+		return LTTCOMM_CONSUMERD_INVALID_PARAMETERS;
+	}
+
+	if (channel.paused) {
+		ERR_FMT("{} command attempted on channel that is already paused",
+			command_name.data());
+		return LTTCOMM_CONSUMERD_INVALID_PARAMETERS;
+	}
+
+	channel.paused = new_paused_status;
+
+	/* Get the consumption thread to rebuild its poll set. */
+	the_consumer_data.need_update = 1;
+
+	return LTTCOMM_CONSUMERD_SUCCESS;
+}
+} /* namespace */
+
+enum lttcomm_return_code lttng_consumer_pause_channel(lttng_consumer_channel& channel)
+{
+	return _set_channel_pause_status(channel, "Pause channel", true);
 }
 
 void lttng_consumer_sigbus_handle(void *addr)
