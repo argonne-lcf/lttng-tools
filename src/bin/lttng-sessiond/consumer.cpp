@@ -143,6 +143,8 @@ struct formatter<lttcomm_return_code> : formatter<std::string> {
 		case LTTCOMM_CONSUMERD_UNKNOWN_ERROR:
 			description = "Unknown error";
 			break;
+		case LTTCOMM_NR:
+			std::abort();
 		}
 
 		return format_to(ctx.out(), description);
