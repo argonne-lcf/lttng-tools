@@ -16,6 +16,7 @@
 #include "lttng-sessiond.hpp"
 #include "manage-consumer.hpp"
 #include "pause.hpp"
+#include "resume.hpp"
 #include "save.hpp"
 #include "testpoint.hpp"
 #include "utils.hpp"
@@ -2217,6 +2218,9 @@ skip_domain:
 	}
 	case LTTCOMM_SESSIOND_COMMAND_PAUSE_SESSION:
 		cmd_pause_session(*target_session);
+		break;
+	case LTTCOMM_SESSIOND_COMMAND_RESUME_SESSION:
+		cmd_resume_session(*target_session);
 		break;
 	case LTTCOMM_SESSIOND_COMMAND_LIST_TRIGGERS:
 	{

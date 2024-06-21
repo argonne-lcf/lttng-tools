@@ -686,6 +686,9 @@ enum lttng_error_code {
 	/// Session data consumption is already paused.
 	LTTNG_ERR_SESSION_DATA_CONSUMPTION_ALREADY_PAUSED = 171,
 
+	/// Session data consumption is already ongoing.
+	LTTNG_ERR_SESSION_DATA_CONSUMPTION_ALREADY_ONGOING = 172,
+
 	/* MUST be last element of the manually-assigned section of the enum */
 	/// @cond INTERNAL_ERR_CODES
 	LTTNG_ERR_NR,

@@ -10,10 +10,8 @@
 
 #include "session.hpp"
 
-#include <common/string-utils/c-string-view.hpp>
-
 #include <lttng/lttng-error.h>
 
-lttng_error_code cmd_resume_session(const ltt_session::locked_ref& session);
+void cmd_resume_session(const ltt_session::locked_ref& session);
 
 #endif /* LTTNG_SESSIOND_RESUME_H */

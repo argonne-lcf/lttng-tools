@@ -67,6 +67,9 @@ int session_trylock_list() noexcept;
 #define LTTNG_THROW_SESSION_DATA_CONSUMPTION_ALREADY_PAUSED()                       \
 	throw lttng::sessiond::exceptions::session_data_consumption_already_paused( \
 		LTTNG_SOURCE_LOCATION())
+#define LTTNG_THROW_SESSION_DATA_CONSUMPTION_ALREADY_ONGOING()                       \
+	throw lttng::sessiond::exceptions::session_data_consumption_already_ongoing( \
+		LTTNG_SOURCE_LOCATION())
 
 /*
  * Tracing session list
@@ -311,6 +314,7 @@ public:
 	void unlock() const noexcept;
 
 	void pause();
+	void resume();
 
 	lttng::sessiond::user_space_consumer_channel_keys user_space_consumer_channel_keys() const;
 
@@ -579,8 +583,19 @@ public:
 
 class session_data_consumption_already_paused : public lttng::runtime_error {
 public:
-	explicit session_data_consumption_already_paused(const lttng::source_location& source_location_) :
-		lttng::runtime_error("Session already paused", source_location_)
+	explicit session_data_consumption_already_paused(
+		const lttng::source_location& source_location_) :
+		lttng::runtime_error("Session data consumption is already paused", source_location_)
+	{
+	}
+};
+
+class session_data_consumption_already_ongoing : public lttng::runtime_error {
+public:
+	explicit session_data_consumption_already_ongoing(
+		const lttng::source_location& source_location_) :
+		lttng::runtime_error("Session data consumption is already ongoing",
+				     source_location_)
 	{
 	}
 };

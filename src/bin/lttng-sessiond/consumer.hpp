@@ -429,4 +429,6 @@ int consumer_clear_channel(struct consumer_socket *socket, uint64_t key);
 
 void consumer_pause_channel(consumer_socket *socket, uint64_t key);
 
+void consumer_resume_channel(consumer_socket *socket, uint64_t key);
+
 #endif /* _CONSUMER_H */
