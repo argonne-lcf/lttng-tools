@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # SPDX-FileCopyrightText: 2017 Philippe Proulx <pproulx@efficios.com>
 # SPDX-License-Identifier: MIT
 

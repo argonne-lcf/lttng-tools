@@ -16,6 +16,8 @@ dist_doc_DATA = LICENSE \
 
 dist_noinst_DATA = CodingStyle.md
 
+dist_bin_SCRIPTS = dirwatch.py
+
 EXTRA_DIST = extras/lttng-bash_completion \
 	     extras/zsh-completion \
 	     LICENSES/BSD-2-Clause \
